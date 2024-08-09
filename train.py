@@ -28,23 +28,31 @@ class Identity(nn.Module):
 model.avgpool = Identity()
 model.classifier = nn.Sequential(
     nn.Flatten(),
-    nn.Linear(25088, 4096),
-    nn.ReLU(inplace=True),
-    nn.Linear(4096, 3),
-    nn.ReLU(inplace=True),
+    nn.Linear(25088, 1000),
+    nn.ReLU(),
+    nn.Linear(1000, 3),
+    nn.Softmax(dim=1)
 )
 
-#main
-image_path =  "/content/drive/MyDrive/my projects/face detection/image/personA/frame12.jpg"
-image = cv.imread(image_path)
-image = resized_image(image, target_size=(224, 224))
-image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-# plt.imshow(image)
-# image.shape
 
-train_data_features_A = []
-train_data_features_B = []
-train_data_features_C = []
+
+# utility methods
+def resized_image(image, target_size=(224, 224)):
+    # Get the original image dimensions
+    original_height, original_width = image.shape[:2]
+    target_width, target_height = target_size
+
+    # Resize the image
+    image_resized = cv.resize(image, (target_width, target_height))
+    # image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
+
+
+    # Calculate the scale factors
+    x_scale = target_width / original_width
+    y_scale = target_height / original_height
+
+    return image_resized
+
 
 data_features = []
 data_labels = []
@@ -120,7 +128,7 @@ batch_size = 10
 dl_train = torch.utils.data.DataLoader(cd_train,
                                  batch_size = batch_size,
                                  shuffle = True,
-                                 num_workers = 1,   #for parallel processing
+                                 num_workers = 1,   # for parallel processing
                                  pin_memory = False, # when we have gpu
                                 #  sampler = None,
                                 #  collate_fn = new_collate,
@@ -139,12 +147,12 @@ import torch.optim as optim
 
 model = model.to(device)
 
-optimizer = optim.Adam(model.parameters(), lr = 0.1)
+optimizer = optim.Adam(model.parameters(), lr = 0.01)
 loss_fn = nn.CrossEntropyLoss()
 
 
 
-epochs = 2
+epochs = 20
 loss_value = []
 total_batches = (epochs * len(train_data_features) // batch_size)
 
@@ -210,21 +218,3 @@ for epoch in range(epochs):
 
 
 
-
-
-# utility methods
-def resized_image(image, target_size=(224, 224)):
-    # Get the original image dimensions
-    original_height, original_width = image.shape[:2]
-    target_width, target_height = target_size
-
-    # Resize the image
-    image_resized = cv.resize(image, (target_width, target_height))
-    # image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
-
-
-    # Calculate the scale factors
-    x_scale = target_width / original_width
-    y_scale = target_height / original_height
-
-    return image_resized
